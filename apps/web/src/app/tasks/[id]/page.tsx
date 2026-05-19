@@ -15,10 +15,11 @@ export default async function TaskDetailPage({ params }: Props) {
   const { id } = await params
   const task = await getTask(id)
 
-  const executions = task.last_execution
-    ? [...(task as any).executions].sort(
-        (a: { executed_at: string }, b: { executed_at: string }) =>
-          new Date(b.executed_at).getTime() - new Date(a.executed_at).getTime()
+  interface ExecRecord { id: string; executed_at: string; note: string | null; task_id: string; user_id: string; created_at: string }
+  const rawTask = task as typeof task & { executions?: ExecRecord[] }
+  const executions = rawTask.executions
+    ? [...rawTask.executions].sort(
+        (a, b) => new Date(b.executed_at).getTime() - new Date(a.executed_at).getTime()
       )
     : []
 
@@ -93,7 +94,7 @@ export default async function TaskDetailPage({ params }: Props) {
           <p className="text-center text-gray-400 py-8">Aún no hay registros.</p>
         ) : (
           <ul className="space-y-2">
-            {executions.map((exec: any, i: number) => {
+            {executions.map((exec, i) => {
               const prevExec = executions[i + 1]
               const gap = prevExec
                 ? differenceInDays(parseISO(exec.executed_at), parseISO(prevExec.executed_at))

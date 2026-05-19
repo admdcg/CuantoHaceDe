@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useTransition } from 'react'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Trash2, ArrowDown } from 'lucide-react'

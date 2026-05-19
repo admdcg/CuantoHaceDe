@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle, ChevronRight, Clock } from 'lucide-react'
-import { cn, daysSince, urgencyLevel, formatInterval } from '@/lib/utils'
+import { daysSince, urgencyLevel, formatInterval } from '@/lib/utils'
 import { getCategory } from '@/lib/categories'
 import { Button } from '@/components/ui/button'
 import { ExecutionModal } from '@/components/executions/execution-modal'
@@ -11,13 +11,6 @@ import type { TaskWithStats } from '@cuantohacede/types'
 
 interface TaskCardProps {
   task: TaskWithStats
-}
-
-const urgencyRing = {
-  none: 'border-gray-200',
-  ok: 'border-l-4',
-  warning: 'border-l-4',
-  overdue: 'border-l-4',
 }
 
 export function TaskCard({ task }: TaskCardProps) {

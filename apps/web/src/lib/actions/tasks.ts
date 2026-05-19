@@ -6,14 +6,12 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import type { TaskWithStats } from '@cuantohacede/types'
 
+const VALID_CATEGORIES = ['hygiene', 'health', 'home', 'car', 'work', 'pets', 'finances', 'other'] as const
+
 const TaskSchema = z.object({
   name: z.string().min(1).max(100).trim(),
   description: z.string().max(500).trim().optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/)
-    .optional(),
-  icon: z.string().max(10).optional(),
+  category: z.enum(VALID_CATEGORIES).default('other'),
   interval_days: z.coerce.number().int().min(1).max(3650).optional().nullable(),
 })
 

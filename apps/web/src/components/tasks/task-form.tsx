@@ -1,52 +1,172 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { createTask, updateTask } from '@/lib/actions/tasks'
+import { CATEGORIES, getCategory, type CategoryId } from '@/lib/categories'
 import type { Task } from '@cuantohacede/types'
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316']
-const ICONS = ['📋', '💇', '🏃', '🧹', '💊', '🚗', '🐾', '🌱', '💻', '📚', '🍳', '🛒']
+type Step = 'category' | 'template' | 'form'
+type FieldErrors = Record<string, string[] | undefined>
 
 interface TaskFormProps {
   task?: Task
   onSuccess?: () => void
 }
 
-type FieldErrors = Record<string, string[] | undefined>
-
 export function TaskForm({ task, onSuccess }: TaskFormProps) {
+  const isEditing = !!task
+  const [step, setStep] = useState<Step>(isEditing ? 'form' : 'category')
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId>(
+    (task?.category as CategoryId) ?? 'other'
+  )
+  const [taskName, setTaskName] = useState(task?.name ?? '')
+  const [intervalDays, setIntervalDays] = useState<string>(
+    task?.interval_days ? String(task.interval_days) : ''
+  )
   const [isPending, startTransition] = useTransition()
   const [errors, setErrors] = useState<FieldErrors>({})
-  const [selectedColor, setSelectedColor] = useState(task?.color ?? '#6366f1')
-  const [selectedIcon, setSelectedIcon] = useState(task?.icon ?? '📋')
 
-  async function handleSubmit(formData: FormData) {
-    formData.set('color', selectedColor)
-    formData.set('icon', selectedIcon)
+  const category = getCategory(selectedCategory)
+
+  function handleCategorySelect(id: CategoryId) {
+    setSelectedCategory(id)
+    setStep('template')
+  }
+
+  function handleTemplateSelect(name: string, interval: number) {
+    setTaskName(name)
+    setIntervalDays(String(interval))
+    setStep('form')
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setErrors({})
+
+    const formData = new FormData(e.currentTarget)
+    formData.set('category', selectedCategory)
 
     startTransition(async () => {
-      const result = task
+      const result = isEditing
         ? await updateTask(task.id, formData)
         : await createTask(formData)
 
       if (result?.error) {
         setErrors(result.error as FieldErrors)
       } else {
-        setErrors({})
         onSuccess?.()
       }
     })
   }
 
+  // Step 1: choose category
+  if (step === 'category') {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-gray-500">¿A qué área pertenece esta tarea?</p>
+        <div className="grid grid-cols-2 gap-2">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => handleCategorySelect(cat.id)}
+              className="flex items-center gap-3 rounded-xl border border-gray-200 p-3 text-left transition-all hover:border-gray-300 hover:shadow-sm active:scale-95"
+              style={{ borderLeftColor: cat.color, borderLeftWidth: 4 }}
+            >
+              <span className="text-2xl">{cat.icon}</span>
+              <span className="text-sm font-medium text-gray-800">{cat.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Step 2: choose template or custom
+  if (step === 'template') {
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setStep('category')}
+          className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
+        >
+          <ArrowLeft size={14} />
+          {category.label}
+        </button>
+
+        <p className="text-sm text-gray-500">Elige una tarea frecuente o escribe la tuya:</p>
+
+        <div className="space-y-1.5">
+          {category.templates.map((tpl) => (
+            <button
+              key={tpl.name}
+              type="button"
+              onClick={() => handleTemplateSelect(tpl.name, tpl.interval_days)}
+              className="flex w-full items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 active:bg-gray-100"
+            >
+              <span className="text-sm font-medium text-gray-800">{tpl.name}</span>
+              <span className="text-xs text-gray-400">
+                {tpl.interval_days < 7
+                  ? `${tpl.interval_days}d`
+                  : tpl.interval_days < 30
+                  ? `${Math.round(tpl.interval_days / 7)}sem`
+                  : tpl.interval_days < 365
+                  ? `${Math.round(tpl.interval_days / 30)}m`
+                  : `${Math.round(tpl.interval_days / 365)}a`}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => { setTaskName(''); setStep('form') }}
+          className="w-full rounded-lg border-2 border-dashed border-gray-200 py-2.5 text-sm text-gray-400 hover:border-gray-300 hover:text-gray-600"
+        >
+          + Nombre personalizado
+        </button>
+      </div>
+    )
+  }
+
+  // Step 3: form
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {!isEditing && (
+        <button
+          type="button"
+          onClick={() => setStep('template')}
+          className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600"
+        >
+          <ArrowLeft size={14} />
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium text-white"
+            style={{ backgroundColor: category.color }}
+          >
+            {category.icon} {category.label}
+          </span>
+        </button>
+      )}
+
+      {isEditing && (
+        <div
+          className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium text-white"
+          style={{ backgroundColor: category.color }}
+        >
+          {category.icon} {category.label}
+        </div>
+      )}
+
       <Input
         id="name"
         name="name"
         label="Nombre de la tarea"
-        defaultValue={task?.name}
+        value={taskName}
+        onChange={(e) => setTaskName(e.target.value)}
         placeholder="Ej: Cortarme el pelo"
         error={errors.name?.[0]}
         required
@@ -56,72 +176,37 @@ export function TaskForm({ task, onSuccess }: TaskFormProps) {
       <Input
         id="description"
         name="description"
-        label="Descripción (opcional)"
+        label="Nota (opcional)"
         defaultValue={task?.description ?? ''}
-        placeholder="Notas adicionales..."
+        placeholder="Cualquier detalle adicional..."
         error={errors.description?.[0]}
       />
 
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">Intervalo esperado (días)</label>
+        <label htmlFor="interval_days" className="block text-sm font-medium text-gray-700">
+          Hacerlo cada (días)
+        </label>
         <input
           id="interval_days"
           name="interval_days"
           type="number"
           min="1"
           max="3650"
-          defaultValue={task?.interval_days ?? ''}
-          placeholder="Ej: 21 (cada 3 semanas)"
+          value={intervalDays}
+          onChange={(e) => setIntervalDays(e.target.value)}
+          placeholder="Ej: 21"
           className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
+        <p className="text-xs text-gray-400">Opcional. Se usa para el indicador de urgencia.</p>
         {errors.interval_days && (
           <p className="text-xs text-red-600">{errors.interval_days[0]}</p>
         )}
-        <p className="text-xs text-gray-400">Opcional. Se usa para calcular urgencia.</p>
-      </div>
-
-      <div className="space-y-2">
-        <span className="block text-sm font-medium text-gray-700">Icono</span>
-        <div className="flex flex-wrap gap-2">
-          {ICONS.map((icon) => (
-            <button
-              key={icon}
-              type="button"
-              onClick={() => setSelectedIcon(icon)}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg transition-colors ${
-                selectedIcon === icon
-                  ? 'bg-indigo-100 ring-2 ring-indigo-500'
-                  : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-            >
-              {icon}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <span className="block text-sm font-medium text-gray-700">Color</span>
-        <div className="flex gap-2">
-          {COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              onClick={() => setSelectedColor(color)}
-              className={`h-7 w-7 rounded-full transition-transform ${
-                selectedColor === color ? 'scale-125 ring-2 ring-offset-1' : 'hover:scale-110'
-              }`}
-              style={{ backgroundColor: color }}
-              aria-label={`Color ${color}`}
-            />
-          ))}
-        </div>
       </div>
 
       {errors._ && <p className="text-sm text-red-600">{errors._[0]}</p>}
 
       <Button type="submit" loading={isPending} className="w-full">
-        {task ? 'Guardar cambios' : 'Crear tarea'}
+        {isEditing ? 'Guardar cambios' : 'Crear tarea'}
       </Button>
     </form>
   )

@@ -9,8 +9,7 @@ export interface Task {
   user_id: string
   name: string
   description: string | null
-  color: string | null
-  icon: string | null
+  category: string
   interval_days: number | null
   archived: boolean
   created_at: string
@@ -35,8 +34,8 @@ export interface TaskWithStats extends Task {
   average_interval_days: number | null
 }
 
-export type CreateTaskInput = Pick<Task, 'name'> &
-  Partial<Pick<Task, 'description' | 'color' | 'icon' | 'interval_days'>>
+export type CreateTaskInput = Pick<Task, 'name' | 'category'> &
+  Partial<Pick<Task, 'description' | 'interval_days'>>
 
 export type UpdateTaskInput = Partial<CreateTaskInput & Pick<Task, 'archived'>>
 

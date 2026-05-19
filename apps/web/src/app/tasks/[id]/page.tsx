@@ -1,9 +1,9 @@
 import { ArrowLeft, Calendar, TrendingUp, Hash } from 'lucide-react'
 import Link from 'next/link'
 import { getTask } from '@/lib/actions/tasks'
-import { timeAgo, daysSince, formatInterval } from '@/lib/utils'
-import { differenceInDays, parseISO, format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { daysSince, formatInterval } from '@/lib/utils'
+import { getCategory } from '@/lib/categories'
+import { differenceInDays, parseISO } from 'date-fns'
 import { ExecutionRow } from '@/components/executions/execution-row'
 import { TaskEditButton } from '@/components/tasks/task-edit-button'
 
@@ -33,12 +33,25 @@ export default async function TaskDetailPage({ params }: Props) {
           <ArrowLeft size={20} />
         </Link>
         <div className="flex flex-1 items-center gap-3">
-          <span className="text-3xl">{task.icon ?? '📋'}</span>
+          {(() => {
+            const cat = getCategory(task.category)
+            return (
+              <div
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-2xl"
+                style={{ backgroundColor: `${cat.color}18` }}
+              >
+                {cat.icon}
+              </div>
+            )
+          })()}
           <div className="min-w-0">
             <h1 className="truncate text-xl font-bold text-gray-900">{task.name}</h1>
-            {task.description && (
-              <p className="truncate text-sm text-gray-500">{task.description}</p>
-            )}
+            <span
+              className="inline-block rounded-full px-2 py-0.5 text-xs font-medium text-white"
+              style={{ backgroundColor: getCategory(task.category).color }}
+            >
+              {getCategory(task.category).label}
+            </span>
           </div>
         </div>
         <TaskEditButton task={task} />

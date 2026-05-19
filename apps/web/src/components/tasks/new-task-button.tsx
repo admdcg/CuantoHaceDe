@@ -11,9 +11,10 @@ export function NewTaskButton() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} size="sm">
-        <Plus size={16} className="mr-1" />
-        Nueva tarea
+      <Button onClick={() => setOpen(true)} size="sm" className="whitespace-nowrap">
+        <Plus size={16} className="mr-1 flex-shrink-0" />
+        <span className="hidden sm:inline">Nueva tarea</span>
+        <span className="sm:hidden">Nueva</span>
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Nueva tarea">
         <TaskForm onSuccess={() => setOpen(false)} />

@@ -21,19 +21,6 @@ jobs:
           supabase db push \
             --db-url "postgresql://postgres.${{ secrets.SUPABASE_PROJECT_REF }}:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-eu-west-2.pooler.supabase.com:6543/postgres"
 
-  deploy-web:
-    name: Deploy Web (Vercel)
-    runs-on: ubuntu-latest
-    environment: production
-    needs: migrate-database
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: apps/web
-          vercel-args: '--prod'
+  # El deploy de la web lo hace la integración Git de Vercel automáticamente
+  # en cada push a master. No se despliega desde aquí para evitar dos rutas de
+  # deploy compitiendo entre sí (la del CLI subía apps/web como raíz del build).

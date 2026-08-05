@@ -1,17 +1,12 @@
 import { LogOut } from 'lucide-react'
-import { redirect } from 'next/navigation'
 import { getTasks } from '@/lib/actions/tasks'
-import { createClient } from '@/lib/supabase/server'
+import { signOut } from '@/lib/actions/auth'
+import { requireUser } from '@/lib/auth/dal'
 import { TaskCard } from '@/components/tasks/task-card'
 import { NewTaskButton } from '@/components/tasks/new-task-button'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
+  const user = await requireUser()
 
   const tasks = await getTasks()
 
@@ -34,14 +29,7 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <NewTaskButton />
-          <form
-            action={async () => {
-              'use server'
-              const s = await createClient()
-              await s.auth.signOut()
-              redirect('/login')
-            }}
-          >
+          <form action={signOut}>
             <button
               type="submit"
               className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
